@@ -5,20 +5,24 @@ import numpy as np
 import pygame
 from numba import jit, prange
 
-WIDTH = 800
-FPS = 60
-RECORD = False
-OUTPUT_FILE = "simulation.mp4"
-FRAME_LIMIT = 1000
+import config
 
-POWER = 30
-DAMPING = 0.999
+# Load configuration values
+WIDTH = config.WIDTH
+FPS = config.FPS
+RECORD = config.RECORD
+OUTPUT_FILE = config.OUTPUT_FILE
+FRAME_LIMIT = config.FRAME_LIMIT
+CIRCLE_RADIUS = config.CIRCLE_RADIUS
+POWER = config.POWER
+DAMPING = config.DAMPING
+NUM_PARTICLES = config.NUM_PARTICLES
 
-NUM_PARTICLES = 8000
+# Calculate HEIGHT if not provided
+HEIGHT = config.HEIGHT if config.HEIGHT is not None else int(WIDTH * 0.5625)
 
-HEIGHT = int(WIDTH * 0.5625)
-
-colors = ["green", "red", "blue", "yellow", "pink"]
+# Load colors from config
+colors = config.COLORS
 COLOR_TO_IDX = {color: idx for idx, color in enumerate(colors)}
 DIRECTION_MATRIX = np.round(
     np.random.uniform(-1, 1, size=(len(colors), len(colors))), 1
@@ -83,7 +87,7 @@ def calculate_forces(
 
 
 def create_particle_arrays(num_particles):
-    """Convert particle dict to numpy arrays for Numba processing."""
+    """Create particle arrays for Numba processing."""
     positions = np.zeros((num_particles, 2), dtype=np.float64)
     positions[:, 0] = np.random.randint(0, WIDTH, num_particles)
     positions[:, 1] = np.random.randint(0, HEIGHT, num_particles)
@@ -188,7 +192,7 @@ def main():
         screen.fill("black")
 
         for color_idx, position in zip(color_indices, positions):
-            pygame.draw.circle(screen, colors[color_idx], position, 2)
+            pygame.draw.circle(screen, colors[color_idx], position, CIRCLE_RADIUS)
 
         update_particle_positions_optimized(
             positions, velocities, accelerations, color_indices, dt
