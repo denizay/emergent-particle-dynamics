@@ -26,26 +26,44 @@ DIRECTION_MATRIX = np.round(
 
 
 @jit(nopython=True, parallel=True, fastmath=True)
-def calculate_forces(positions, color_indices, acc_x, acc_y, power, direction_matrix):
+def calculate_forces(
+    positions, color_indices, acc_x, acc_y, power, direction_matrix, width, height
+):
     """
-    Optimized force calculation using Numba JIT compilation.
+    Optimized force calculation with toroidal (wrapping) topology.
     Uses parallel execution and vectorized operations.
+
+    Parameters:
+    - width, height: dimensions of the map for wrapping calculations
     """
     n = positions.shape[0]
-
     # Reset accelerations
     acc_x[:] = 0
     acc_y[:] = 0
+
+    half_width = width * 0.5
+    half_height = height * 0.5
 
     for i in prange(n):
         for j in range(n):
             if i == j:
                 continue
 
-            # Calculate distance
-            # We can cache the distances
+            # Calculate raw distance
             dx = positions[j, 0] - positions[i, 0]
             dy = positions[j, 1] - positions[i, 1]
+
+            # Apply toroidal wrapping - use shortest path
+            if dx > half_width:
+                dx -= width
+            elif dx < -half_width:
+                dx += width
+
+            if dy > half_height:
+                dy -= height
+            elif dy < -half_height:
+                dy += height
+
             dist_sq = dx * dx + dy * dy
 
             # Early exit if too far (50^2 = 2500)
@@ -53,8 +71,6 @@ def calculate_forces(positions, color_indices, acc_x, acc_y, power, direction_ma
                 continue
 
             dist = np.sqrt(dist_sq)
-
-            # TO DO: They should be able to pull/push each other from the other side of the map
 
             if dist < 10:
                 # Repel if too close
@@ -129,6 +145,8 @@ def update_particle_positions_optimized(
         accelerations[:, 1],
         POWER,
         DIRECTION_MATRIX,
+        WIDTH,
+        HEIGHT,
     )
     end_time = time.time()
     time_forces += end_time - start_time
