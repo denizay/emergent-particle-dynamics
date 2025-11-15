@@ -70,15 +70,13 @@ def calculate_forces(
             if dist_sq == 0 or dist_sq > 2500:
                 continue
 
-            dist = np.sqrt(dist_sq)
-
-            if dist < 10:
+            if dist_sq < 100:
                 # Repel if too close
-                force = -0.1 / max(1, dist)
+                force = -0.1 / max(1, dist_sq)
             else:
                 # Get direction based on color interaction
                 direction = direction_matrix[color_indices[i], color_indices[j]]
-                force = power * direction / dist**2
+                force = power * direction / dist_sq
 
             acc_x[i] += dx * force
             acc_y[i] += dy * force
