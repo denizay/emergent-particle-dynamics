@@ -7,7 +7,7 @@ python particle_life.py
 
 ## Sample Runs
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/TPpkyUbe7lg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Sample Run 1](https://img.youtube.com/vi/TPpkyUbe7lg/0.jpg)](https://www.youtube.com/watch?v=TPpkyUbe7lg)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/yxdDkP5VdV8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Sample Run 2](https://img.youtube.com/vi/yxdDkP5VdV8/0.jpg)](https://www.youtube.com/watch?v=yxdDkP5VdV8)
 
