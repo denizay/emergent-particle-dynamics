@@ -1,4 +1,3 @@
-import random
 import time
 
 import imageio.v2 as imageio
@@ -6,16 +5,16 @@ import numpy as np
 import pygame
 from numba import jit, prange
 
-WIDTH = 1400
+WIDTH = 800
 FPS = 60
 RECORD = False
 OUTPUT_FILE = "simulation.mp4"
-FRAME_LIMIT = 10
+FRAME_LIMIT = 1000
 
 POWER = 30
 DAMPING = 0.999
 
-NUM_PARTICLES = 32000
+NUM_PARTICLES = 8000
 
 HEIGHT = int(WIDTH * 0.5625)
 
@@ -69,50 +68,17 @@ def calculate_forces(positions, color_indices, acc_x, acc_y, power, direction_ma
             acc_y[i] += dy * force
 
 
-def create_particles(num_particles):
-    particles = {}
-    for idx in range(num_particles):
-        x = random.randint(0, WIDTH)
-        y = random.randint(0, HEIGHT)
-        color = random.choice(colors)
-        size = 2
-
-        particles[idx] = {
-            "color": color,
-            "position": pygame.Vector2(x, y),
-            "vel_x": 0,
-            "vel_y": 0,
-            "acc_x": 0,
-            "acc_y": 0,
-            "size": size,
-        }
-
-    return particles
-
-
-def particles_to_arrays(particles):
+def create_particle_arrays(num_particles):
     """Convert particle dict to numpy arrays for Numba processing."""
-    n = len(particles)
-    positions = np.zeros((n, 2), dtype=np.float64)
-    velocities = np.zeros((n, 2), dtype=np.float64)
-    accelerations = np.zeros((n, 2), dtype=np.float64)
-    color_indices = np.zeros(n, dtype=np.int32)
+    positions = np.zeros((num_particles, 2), dtype=np.float64)
+    positions[:, 0] = np.random.randint(0, WIDTH, num_particles)
+    positions[:, 1] = np.random.randint(0, HEIGHT, num_particles)
 
-    for i, (pid, p) in enumerate(particles.items()):
-        positions[i] = [p["position"].x, p["position"].y]
-        velocities[i] = [p["vel_x"], p["vel_y"]]
-        color_indices[i] = COLOR_TO_IDX[p["color"]]
+    velocities = np.zeros((num_particles, 2), dtype=np.float64)
+    accelerations = np.zeros((num_particles, 2), dtype=np.float64)
+    color_indices = np.random.randint(0, len(colors), num_particles)
 
     return positions, velocities, accelerations, color_indices
-
-
-def arrays_to_particles(particles, positions, velocities):
-    """Update particle dict from numpy arrays."""
-    for i, (pid, p) in enumerate(particles.items()):
-        p["position"].x = positions[i, 0]
-        p["position"].y = positions[i, 1]
-        p["vel_x"] = velocities[i, 0]
-        p["vel_y"] = velocities[i, 1]
 
 
 @jit(nopython=True, fastmath=True)
@@ -146,14 +112,14 @@ def update_positions(positions, velocities, accelerations, dt, damping, width, h
             positions[i, 1] -= height
 
 
-time_forces, time_update, time_sync = 0, 0, 0
+time_forces, time_update = 0, 0
 
 
 def update_particle_positions_optimized(
-    particles, positions, velocities, accelerations, color_indices, dt
+    positions, velocities, accelerations, color_indices, dt
 ):
     """Optimized update using Numba-compiled functions."""
-    global time_forces, time_update, time_sync
+    global time_forces, time_update
     # Calculate forces
     start_time = time.time()
     calculate_forces(
@@ -171,11 +137,6 @@ def update_particle_positions_optimized(
     update_positions(positions, velocities, accelerations, dt, DAMPING, WIDTH, HEIGHT)
     end_time = time.time()
     time_update += end_time - start_time
-    start_time = time.time()
-    # Sync back to particle dict for rendering
-    arrays_to_particles(particles, positions, velocities)
-    end_time = time.time()
-    time_sync += end_time - start_time
 
 
 def main():
@@ -186,10 +147,9 @@ def main():
     if RECORD:
         frames = []
 
-    particles = create_particles(NUM_PARTICLES)
-
-    # Convert to arrays for Numba processing
-    positions, velocities, accelerations, color_indices = particles_to_arrays(particles)
+    positions, velocities, accelerations, color_indices = create_particle_arrays(
+        NUM_PARTICLES
+    )
 
     running = True
     dt = 0
@@ -211,14 +171,11 @@ def main():
 
         screen.fill("black")
 
-        for particle in particles.values():
-            # print(type(particle))
-            pygame.draw.circle(
-                screen, particle["color"], particle["position"], particle["size"]
-            )
+        for color_idx, position in zip(color_indices, positions):
+            pygame.draw.circle(screen, colors[color_idx], position, 2)
 
         update_particle_positions_optimized(
-            particles, positions, velocities, accelerations, color_indices, dt
+            positions, velocities, accelerations, color_indices, dt
         )
 
         pygame.display.flip()
@@ -236,7 +193,6 @@ def main():
     pygame.quit()
     print(f"Time taken for forces: {time_forces} seconds")
     print(f"Time taken for update: {time_update} seconds")
-    print(f"Time taken for sync: {time_sync} seconds")
 
 
 if __name__ == "__main__":
